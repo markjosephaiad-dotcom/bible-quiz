@@ -61,6 +61,8 @@
         .page { display: none; }
         .active { display: block; }
 
+        .loading-box { text-align: center; padding: 20px; color: var(--coptic-maroon); font-weight: bold; }
+
         .images-row {
             display: flex;
             justify-content: center;
@@ -123,13 +125,17 @@
 
     <div class="container">
 
-        <div id="loginPage" class="page active">
+        <div id="loadingPage" class="loading-box">
+            🔄 جاري تحميل أسئلة مسابقة اليوم من أمانة الاجتماع... برجاء الانتظار ثواني.
+        </div>
+
+        <div id="loginPage" class="page">
             <div class="images-row">
                 <img src="abusafein.jpg" alt="أبي سيفين" class="saint-img">
                 <img src="virgin.jpg" alt="السيدة العذراء" class="saint-img">
             </div>
             <h3>باسم الآب والابن والروح القدس الإله الواحد.. آمين</h3>
-            <p style="text-align: center; margin-bottom: 15px; font-size: 14px; color:#777;">من فضلك اختر اسمك من القائمة أدناه لبدء المسابقة اليومية (10 أسئلة):</p>
+            <p style="text-align: center; margin-bottom: 15px; font-size: 14px; color:#777;">من فضلك اختر اسمك من القائمة أدناه لبدء المسابقة اليومية:</p>
             
             <select id="servantSelect">
                 <option value="">-- اختر اسمك يا خادم من هنا --</option>
@@ -169,7 +175,7 @@
 
         <div id="quizPage" class="page">
             <div class="quiz-header">
-                <span id="questionCounter">السؤال 1 من 10</span>
+                <span id="questionCounter">السؤال 1</span>
                 <span class="timer-box">الوقت المتبقي: <span id="timeLeft">02:00</span></span>
             </div>
             <div class="progress-container">
@@ -215,19 +221,10 @@
     </div>
 
     <script>
-        const quizQuestions = [
-            { question: "السؤال 1: كم عدد المجامع المسكونية المعترف بها في كنيستنا الأرثوذكسية؟", options: ["3 مجامع", "4 مجامع", "7 مجامع", "2 مجمع"], answer: "3 مجامع" },
-            { question: "السؤال 2: من هو النبي الذي لُقب بالرائي وكتب سفر المراثي؟", options: ["إشعياء", "إرميا", "حزقيال", "دانيال"], answer: "إرميا" },
-            { question: "السؤال 3: في أي سفر نجد قصة صعود إيليا النبي في العاصفة؟", options: ["ملوك الأول", "ملوك الثاني", "أخبار الأيام الأول", "صموئيل الثاني"], answer: "ملوك الثاني" },
-            { question: "السؤال 4: ما هو اسم السفر الذي يأتي مباشرة بعد سفر يشوع؟", options: ["راعوث", "القضاة", "صموئيل الأول", "عزرا"], answer: "القضاة" },
-            { question: "السؤال 5: من هو الرسول الذي كرز في أرض مصر وأسس الكنيسة القبطية؟", options: ["مارمرقس الرسول", "مارمينا", "أندراوس الرسول", "توما الرسول"], answer: "مارمرقس الرسول" },
-            { question: "السؤال 6: كم مكث يونان النبي في بطن الحوت؟", options: ["يومين وليلتين", "3 أيام و3 ليالٍ", "7 أيام", "أربعين يوماً"], answer: "3 أيام و3 ليالٍ" },
-            { question: "السؤال 7: ما هو آخر أسفار العهد القديم في الترتيب؟", options: ["ملاخي", "حجي", "زكريا", "دانيال"], answer: "ملاخي" },
-            { question: "السؤال 8: أي من هذه الأسفار يعتبر من الأسفار الشعرية؟", options: ["الجامعة", "تكوين", "أعمال الرسل", "رؤيا"], answer: "الجامعة" },
-            { question: "السؤال 9: من هو الملك الذي بنى الهيكل الأول في أورشليم؟", options: ["داود الملك", "سليمان الحكيم", "شاول الملك", "حزقيا الملك"], answer: "سليمان الحكيم" },
-            { question: "السؤال 10: من هي المرأة التي خلصت شعبها من الهلاك ومكتوب سفر باسمها؟", options: ["راعوث", "أستير", "ديبورة", "يهوديت"], answer: "أستير" }
-        ];
+        // رابط جوجل شيت المباشر لقراءة الأسئلة تلقائياً
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQATB615cDv6gnBZdVqUNJV8f7WTaA4p8nLuiV8uBJfGKUz5fFBP5UT6-XQTRyTumgZIBv_h9Pt64mg/pub?output=csv";
 
+        let quizQuestions = [];
         let selectedServant = "";
         let currentQuestionIndex = 0;
         let score = 0;
@@ -235,8 +232,66 @@
         let timeLeft = 120; 
         let userAnswersLog = [];
 
-        const DAILY_QUIZ_ID = "quiz_day_30_05_2026"; 
+        // معرف فريد للعبة اليوم لمنع التكرار والرقم السري للإدارة
+        const DAILY_QUIZ_ID = "dynamic_sheets_quiz_v1"; 
         const ADMIN_PASSWORD = "1234"; 
+
+        // دالة لتحويل نصوص الـ CSV القادمة من جوجل لجدول أسئلة منظم جافاسكريبت
+        function parseCSV(text) {
+            let lines = text.split(/\r\n|\n/);
+            let result = [];
+            let headers = lines[0].split(',');
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i]) continue;
+                
+                // معالجة علامات التنصيص والفواصل في خلايا الإكسل
+                let row = [];
+                let inQuotes = false;
+                let currentCell = '';
+                
+                for (let j = 0; j < lines[i].length; j++) {
+                    let char = lines[i][j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(currentCell.trim());
+                        currentCell = '';
+                    } else {
+                        currentCell += char;
+                    }
+                }
+                row.push(currentCell.trim());
+
+                if (row.length >= 6) {
+                    result.push({
+                        question: row[0],
+                        options: [row[1], row[2], row[3], row[4]].filter(o => o !== ""),
+                        answer: row[5]
+                    });
+                }
+            }
+            return result;
+        }
+
+        // جلب الأسئلة فوراً عند تشغيل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch(SHEET_CSV_URL)
+                .then(response => response.text())
+                .then(data => {
+                    quizQuestions = parseCSV(data);
+                    if(quizQuestions.length === 0) {
+                        document.getElementById("loadingPage").innerText = "⚠️ خطأ: لم يتم العثور على أسئلة داخل ملف جوجل شيت، تأكد من ملء الجدول.";
+                    } else {
+                        document.getElementById("loadingPage").style.display = "none";
+                        switchPage("loginPage");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById("loadingPage").innerText = "⚠️ فشل الاتصال بجوجل شيت. تأكد من عمل نشر للويب Publish to web.";
+                });
+        });
 
         function attemptLogin() {
             selectedServant = document.getElementById("servantSelect").value;
@@ -388,7 +443,7 @@
                     html += `
                         <tr>
                             <td><strong>${servant}</strong></td>
-                            <td style="color:var(--coptic-maroon); font-weight:bold;">${scoresData[servant]} / 10</td>
+                            <td style="color:var(--coptic-maroon); font-weight:bold;">${scoresData[servant]} / ${quizQuestions.length}</td>
                             <td>
                                 <button class="admin-btn" style="background:var(--success);" onclick="editScore('${servant}')">تعديل</button>
                                 <button class="admin-btn" style="background:var(--error);" onclick="resetBlock('${servant}')">إلغاء حظر وإعادة</button>
@@ -403,11 +458,11 @@
         function editScore(servantName) {
             let scoresData = JSON.parse(localStorage.getItem(DAILY_QUIZ_ID + "_scores")) || {};
             let currentScore = scoresData[servantName];
-            let newScore = prompt(`الدرجة الحالية لـ (${servantName}) هي ${currentScore}.\nاكتب الدرجة الجديدة (من 0 إلى 10):`, currentScore);
+            let newScore = prompt(`الدرجة الحالية لـ (${servantName}) هي ${currentScore}.\nاكتب الدرجة الجديدة (من 0 إلى ${quizQuestions.length}):`, currentScore);
             
             if (newScore !== null && newScore.trim() !== "") {
                 let parsed = parseInt(newScore);
-                if (parsed >= 0 && parsed <= 10) {
+                if (parsed >= 0 && parsed <= quizQuestions.length) {
                     scoresData[servantName] = parsed;
                     localStorage.setItem(DAILY_QUIZ_ID + "_scores", JSON.stringify(scoresData));
                     alert(`تم تعديل الدرجة بنجاح!`);
@@ -435,6 +490,7 @@
         }
 
         function switchPage(pageId) {
+            document.getElementById("loadingPage").style.display = "none";
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
         }
