@@ -36,7 +36,7 @@
         .progress-container { width: 100%; height: 6px; background: #EFEBE9; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
         .progress-bar { height: 100%; width: 0%; background: var(--coptic-gold); transition: width 0.4s ease; }
         .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; text-align: center; }
-        .option-card { background: #FDFDFD; border: 2px solid #ECE9E4; padding: 14px; margin-bottom: 12px; border-radius: 10px; cursor: pointer; text-align: center; }
+        .option-card { background: #FDFDFD; border: 2px solid #ECE9E4; padding: 14px; margin-bottom: 12px; border-radius: 10px; cursor: pointer; text-align: center; font-size: 18px; }
         .option-card:hover { border-color: var(--coptic-gold); background: #FAF6EE; }
         .option-card.correct { background-color: #E8F5E9 !important; border-color: var(--success) !important; color: var(--success); font-weight: bold; }
         .option-card.wrong { background-color: #FFEBEE !important; border-color: var(--error) !important; color: var(--error); }
@@ -64,7 +64,7 @@
                 <img src="virgin.jpg" alt="السيدة العذراء" class="saint-img">
             </div>
             <h3>باسم الآب والابن والروح القدس الإله الواحد.. آمين</h3>
-            <p style="text-align: center; margin-bottom: 15px; font-size: 14px; color:#777;">من فضلك اختر اسمك من القائمة أدناه لبدء المسابقة اليومية:</p>
+            <p style="text-align: center; margin-bottom: 15px; font-size: 14px; color:#777;">من فضلك اختر اسمك من القائمة أدناه لبدء المسابقة اليومية (صح أو خطأ):</p>
             
             <select id="servantSelect">
                 <option value="">-- اختر اسمك يا خادم من هنا --</option>
@@ -83,7 +83,7 @@
                 <option value="شيري شهدي">شيري شهدي</option>
                 <option value="امير رامز">امير رامز</option>
                 <option value="فادي كحيل">فادي كحيل</option>
-                <option value="كيرلس fady">كيرلس فادي</option>
+                <option value="كيرلس فادي">كيرلس فادي</option>
                 <option value="مريان عادل">مريان عادل</option>
             </select>
             
@@ -143,8 +143,7 @@
     </div>
 
     <script>
-        // داتا الأسئلة هنا مباشرة في الكود لضمان السرعة وثبات التشغيل
-        // يمكنك تعديل الأسئلة من هنا، ولو كتبت اختيارين بس (صح وخطأ) هيظهر زرارين بس تلقائياً!
+        // الأسئلة هنا مدمجة مباشرة ونوعها (صح وخطأ) باختيارين فقط
         const quizQuestions = [
             { question: "السؤال 1: بني سليمان الحكيم الهيكل الأول في أورشليم.", options: ["صح", "خطأ"], answer: "صح" },
             { question: "السؤال 2: عدد المجامع المسكونية المعترف بها في كنيستنا هو 4 مجامع.", options: ["صح", "خطأ"], answer: "خطأ" },
@@ -179,7 +178,7 @@
                 let currentQ = quizQuestions[currentQuestionIndex];
                 document.getElementById("questionText").innerText = currentQ.question;
                 let optionsHtml = "";
-                currentQ.options.forEach(opt => { if(opt.trim() !== "") { optionsHtml += `<div class="option-card" onclick="selectOption(this, '${opt}')">${opt}</div>`; } });
+                currentQ.options.forEach(opt => { optionsHtml += `<div class="option-card" onclick="selectOption(this, '${opt}')">${opt}</div>`; });
                 document.getElementById("optionsContainer").innerHTML = optionsHtml;
                 timerInterval = setInterval(() => { timeLeft--; updateTimerDisplay(); if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); } }, 1000);
             } else { finishQuiz(); }
